@@ -14,8 +14,7 @@ cmake_install.cmake
 Makefile
 
 # SDL3 external library
-external/SDL3/lib/
-external/SDL3/include/
+external/SDL3/
 
 # OS/IDE files
 .DS_Store
