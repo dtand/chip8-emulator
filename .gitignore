@@ -13,9 +13,6 @@ CMakeCache.txt
 cmake_install.cmake
 Makefile
 
-# SDL3 external library
-external/SDL3/
-
 # OS/IDE files
 .DS_Store
 *.swp
