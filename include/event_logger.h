@@ -8,6 +8,8 @@
 #include "message_queue.h"
 #include "event.h"
 
+const bool ENABLE_EVENT_LOGGING = true;
+
 /**
  * @class EventLogger
  * @brief Singleton event logging system for CHIP-8 emulator.
@@ -62,7 +64,7 @@ private:
     }
 
     void run() {
-        while (running_) {
+        while (running_ && ENABLE_EVENT_LOGGING) {
             std::vector<EventVariant> events;
             for (size_t i = 0; i < batchSize_; ++i) {
                 EventVariant event = StackEvent(0, 0, {});
