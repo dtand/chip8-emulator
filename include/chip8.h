@@ -1,3 +1,12 @@
+
+/**
+ * @class Chip8
+ * @brief CHIP-8 virtual machine core implementation.
+ *
+ * Emulates the CHIP-8 system, including memory, registers, stack, timers,
+ * graphics buffer, keypad state, and opcode execution. Provides methods for
+ * loading ROMs, running emulation cycles, and managing system state.
+ */
 #pragma once
 #include <array>
 

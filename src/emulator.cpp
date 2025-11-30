@@ -35,6 +35,7 @@ const int FRAME_DELAY_US = 16667; // Approx 60Hz
  * @param argv Argument vector from main.
  */
 void Emulator::setup(int argc, char* argv[]) {
+
     std::cout << "Chip-8 Emulator setup" << std::endl;
 
     if(argc != 2) {
@@ -68,6 +69,7 @@ void Emulator::run() {
                 for (int i = 0; i < 16; ++i) {
                     if (scancode == keymap[i]) {
                         chip8.key[i] = pressed ? 1 : 0;
+                        EventLogger::pushLog(InputEvent(i, pressed));
                     }
                 }
             }
@@ -76,7 +78,6 @@ void Emulator::run() {
         chip8.emulateCycle();
 
         if (chip8.drawFlag) {
-            std::cout << "Rendering frame" << std::endl;
             renderer.render(chip8.gfx.data());
             chip8.drawFlag = false;
         }

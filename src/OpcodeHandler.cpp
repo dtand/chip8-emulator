@@ -1,5 +1,7 @@
 #include "opcode.h"
 #include <iostream>
+#include "event_logger.h"
+#include "event.h"
 
 /**
  * @brief Handles 0x0--- opcodes.
@@ -14,14 +16,22 @@
 void OpcodeHandler::handle_0x0(Chip8& chip8, uint16_t opcode) {
     switch(opcode & 0x00FF) {
         /* CLS */
-        case 0x00E0: 
-            chip8.gfx.fill(0);
-            chip8.drawFlag = true;
-            chip8.pc += 2;
-            break;
+            case 0x00E0: 
+                chip8.gfx.fill(0);
+                {
+                    std::map<uint16_t, int> memoryDiff;
+                    for (uint16_t i = 0; i < chip8.gfx.size(); ++i) {
+                        memoryDiff[i] = 0;
+                    }
+                    EventLogger::pushLog(MemoryEvent(memoryDiff));
+                }
+                chip8.drawFlag = true;
+                chip8.pc += 2;
+                break;
         /* RET */
         case 0x00EE: 
             chip8.sp--;
+            EventLogger::pushLog(StackEvent(chip8.pc, chip8.stack[chip8.sp], std::vector<uint16_t>(chip8.stack.begin(), chip8.stack.end())));
             chip8.pc = chip8.stack[chip8.sp];
             chip8.pc += 2;
             break;
@@ -61,6 +71,7 @@ void OpcodeHandler::handle_0x2(Chip8& chip8, uint16_t opcode) {
     /* CALL addr */
     chip8.stack[chip8.sp] = chip8.pc;
     chip8.sp++;
+    EventLogger::pushLog(StackEvent(chip8.pc, opcode & 0x0FFF, std::vector<uint16_t>(chip8.stack.begin(), chip8.stack.end())));
     chip8.pc = opcode & 0x0FFF;
 }
 
@@ -138,6 +149,7 @@ void OpcodeHandler::handle_0x6(Chip8& chip8, uint16_t opcode) {
     uint8_t Vx = (opcode & 0x0F00) >> 8;
     uint8_t byte = opcode & 0x00FF;
     chip8.V[Vx] = byte;
+    EventLogger::pushLog(RegisterEvent(std::map<int, int>{{Vx, byte}}));
     chip8.pc += 2;
 }
 
@@ -155,6 +167,7 @@ void OpcodeHandler::handle_0x7(Chip8& chip8, uint16_t opcode) {
     uint8_t Vx = (opcode & 0x0F00) >> 8;
     uint8_t byte = opcode & 0x00FF;
     chip8.V[Vx] += byte;
+    EventLogger::pushLog(RegisterEvent(std::map<int, int>{{Vx, chip8.V[Vx]}}));
     chip8.pc += 2;
 }
 
@@ -181,44 +194,53 @@ void OpcodeHandler::handle_0x8(Chip8& chip8, uint16_t opcode) {
     switch (opcode & 0x000F) {
         case 0x0000: { /* 8XY0: LD Vx, Vy */
             chip8.V[x] = chip8.V[y];
+            EventLogger::pushLog(RegisterEvent(std::map<int, int>{{x, chip8.V[x]}}));
             break;
         }
         case 0x0001: { /* 8XY1: OR Vx, Vy */
             chip8.V[x] |= chip8.V[y];
+            EventLogger::pushLog(RegisterEvent(std::map<int, int>{{x, chip8.V[x]}}));
             break;
         }
         case 0x0002: { /* 8XY2: AND Vx, Vy */
             chip8.V[x] &= chip8.V[y];
+            EventLogger::pushLog(RegisterEvent(std::map<int, int>{{x, chip8.V[x]}}));
             break;
         }
         case 0x0003: { /* 8XY3: XOR Vx, Vy */
             chip8.V[x] ^= chip8.V[y];
+            EventLogger::pushLog(RegisterEvent(std::map<int, int>{{x, chip8.V[x]}}));
             break;
         }
         case 0x0004: { /* 8XY4: ADD Vx, Vy */
             uint16_t sum = chip8.V[x] + chip8.V[y];
             chip8.V[0xF] = (sum > 255) ? 1 : 0; // Set carry flag
             chip8.V[x] = sum & 0xFF;
+            EventLogger::pushLog(RegisterEvent({{x, chip8.V[x]}, {0xF, chip8.V[0xF]}}));
             break;
         }
         case 0x0005: { /* 8XY5: SUB Vx, Vy */
             chip8.V[0xF] = (chip8.V[x] > chip8.V[y]) ? 1 : 0; // Set borrow flag
             chip8.V[x] -= chip8.V[y];
+            EventLogger::pushLog(RegisterEvent({{x, chip8.V[x]}, {0xF, chip8.V[0xF]}}));
             break;
         }
         case 0x0006: { /* 8XY6: SHR Vx {, Vy} */
             chip8.V[0xF] = chip8.V[x] & 0x1; // Store least significant bit
             chip8.V[x] >>= 1;
+            EventLogger::pushLog(RegisterEvent({{x, chip8.V[x]}, {0xF, chip8.V[0xF]}}));
             break;
         }
         case 0x0007: { /* 8XY7: SUBN Vx, Vy */
             chip8.V[0xF] = (chip8.V[y] > chip8.V[x]) ? 1 : 0; // Set borrow flag
             chip8.V[x] = chip8.V[y] - chip8.V[x];
+            EventLogger::pushLog(RegisterEvent({{x, chip8.V[x]}, {0xF, chip8.V[0xF]}}));
             break;
         }
         case 0x000E: { /* 8XYE: SHL Vx {, Vy} */
             chip8.V[0xF] = (chip8.V[x] & 0x80) >> 7; // Store most significant bit
             chip8.V[x] <<= 1;
+            EventLogger::pushLog(RegisterEvent({{x, chip8.V[x]}, {0xF, chip8.V[0xF]}}));
             break;
         }
         default: {
@@ -293,6 +315,7 @@ void OpcodeHandler::handle_0xC(Chip8& chip8, uint16_t opcode) {
     uint8_t byte = opcode & 0x00FF;
     uint8_t randByte = rand() % 256; // Generate random byte
     chip8.V[Vx] = randByte & byte;
+    EventLogger::pushLog(RegisterEvent(std::map<int, int>{{Vx, chip8.V[Vx]}}));
     chip8.pc += 2;
 
 }
@@ -310,18 +333,23 @@ void OpcodeHandler::handle_0xD(Chip8& chip8, uint16_t opcode) {
     uint8_t y = chip8.V[(opcode & 0x00F0) >> 4];
     uint8_t height = opcode & 0x000F;   
     chip8.V[0x0F] = 0;
-    for (int row = 0; row < height; ++row) {
-        uint8_t spriteByte = chip8.memory[chip8.I + row];
-        for (int col = 0; col < 8; ++col) {
-            if ((spriteByte & (0x80 >> col)) != 0) {
-                uint16_t gfxIndex = (x + col + ((y + row) * 64)) % 2048;
-                if (chip8.gfx[gfxIndex] == 1) {
-                    chip8.V[0x0F] = 1; // Collision detected
+        std::map<uint16_t, int> memoryDiff;
+        for (int row = 0; row < height; ++row) {
+            uint8_t spriteByte = chip8.memory[chip8.I + row];
+            for (int col = 0; col < 8; ++col) {
+                if ((spriteByte & (0x80 >> col)) != 0) {
+                    uint16_t gfxIndex = (x + col + ((y + row) * 64)) % 2048;
+                    if (chip8.gfx[gfxIndex] == 1) {
+                        chip8.V[0x0F] = 1; // Collision detected
+                    }
+                    chip8.gfx[gfxIndex] ^= 1;
+                    memoryDiff[gfxIndex] = chip8.gfx[gfxIndex];
                 }
-                chip8.gfx[gfxIndex] ^= 1;
             }
         }
-    }
+        if (!memoryDiff.empty()) {
+            EventLogger::pushLog(MemoryEvent(memoryDiff));
+        }
     chip8.drawFlag = true;
     chip8.pc += 2;
 }
@@ -384,6 +412,7 @@ void OpcodeHandler::handle_0xF(Chip8& chip8, uint16_t opcode) {
     switch(opcode & 0x00FF) {
         case 0x0007: { /* FX07: LD Vx, DT */
             chip8.V[x] = chip8.delay_timer;
+            EventLogger::pushLog(RegisterEvent(std::map<int, int>{{x, chip8.V[x]}}));
             chip8.pc += 2;
             break;
         }
@@ -392,6 +421,7 @@ void OpcodeHandler::handle_0xF(Chip8& chip8, uint16_t opcode) {
             for (int i = 0; i < 16; ++i) {
                 if (chip8.key[i] != 0) {
                     chip8.V[x] = i;
+                    EventLogger::pushLog(RegisterEvent(std::map<int, int>{{x, chip8.V[x]}}));
                     keyPressed = true;
                     break;
                 }
@@ -404,16 +434,19 @@ void OpcodeHandler::handle_0xF(Chip8& chip8, uint16_t opcode) {
         }
         case 0x0015: { /* FX15: LD DT, Vx */
             chip8.delay_timer = chip8.V[x];
+                EventLogger::pushLog(MemoryEvent(std::map<uint16_t, int>{{0xFFFF, chip8.delay_timer}})); // Use 0xFFFF for delay_timer
             chip8.pc += 2;
             break;
         }
         case 0x0018: { /* FX18: LD ST, Vx */
             chip8.sound_timer = chip8.V[x];
+            EventLogger::pushLog(MemoryEvent(std::map<uint16_t, int>{{0xFFFE, chip8.sound_timer}})); // Use 0xFFFE for sound_timer
             chip8.pc += 2;
             break;
         }
         case 0x001E: { /* FX1E: ADD I, Vx */
             chip8.I += chip8.V[x];
+            // Optionally log I changes as a RegisterEvent if desired
             chip8.pc += 2;
             break;
         }
@@ -427,6 +460,11 @@ void OpcodeHandler::handle_0xF(Chip8& chip8, uint16_t opcode) {
             chip8.memory[chip8.I]     = value / 100;
             chip8.memory[chip8.I + 1] = (value / 10) % 10;
             chip8.memory[chip8.I + 2] = value % 10;
+            EventLogger::pushLog(MemoryEvent({
+                {chip8.I, chip8.memory[chip8.I]},
+                {chip8.I + 1, chip8.memory[chip8.I + 1]},
+                {chip8.I + 2, chip8.memory[chip8.I + 2]}
+            }));
             chip8.pc += 2;
             break;
         }
@@ -434,6 +472,11 @@ void OpcodeHandler::handle_0xF(Chip8& chip8, uint16_t opcode) {
             for (int i = 0; i <= x; ++i) {
                 chip8.memory[chip8.I + i] = chip8.V[i];
             }
+            EventLogger::pushLog(MemoryEvent({
+                {chip8.I, chip8.memory[chip8.I]},
+                {chip8.I + 1, chip8.memory[chip8.I + 1]},
+                {chip8.I + 2, chip8.memory[chip8.I + 2]}
+            }));
             chip8.pc += 2;
             break;
         }
@@ -441,6 +484,12 @@ void OpcodeHandler::handle_0xF(Chip8& chip8, uint16_t opcode) {
             for (int i = 0; i <= x; ++i) {
                 chip8.V[i] = chip8.memory[chip8.I + i];
             }
+            // Log all loaded registers
+            std::map<int, int> changes;
+            for (int i = 0; i <= x; ++i) {
+                changes[i] = chip8.V[i];
+            }
+            EventLogger::pushLog(RegisterEvent(changes));
             chip8.pc += 2;
             break;
         }
@@ -459,6 +508,7 @@ void OpcodeHandler::handle_0xF(Chip8& chip8, uint16_t opcode) {
  * @param opcode The 16-bit opcode value.
  */
 void OpcodeHandler::dispatchOpcode(Chip8& chip8, uint16_t opcode) {
+    EventLogger::pushLog(OpcodeEvent(chip8.pc, opcode));
     switch (opcode & 0xF000) {
         case 0x0000: handle_0x0(chip8, opcode); break;
         case 0x1000: handle_0x1(chip8, opcode); break;

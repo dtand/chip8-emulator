@@ -2,6 +2,13 @@
 #include "chip8.h"
 #include <cstdint>
 
+/**
+ * @class OpcodeHandler
+ * @brief Static class for handling CHIP-8 opcodes.
+ *
+ * Provides static methods to decode and execute CHIP-8 opcodes.
+ * Each method corresponds to a specific opcode or group of opcodes.
+ */
 class OpcodeHandler {
 public:
     static void handle_0x0(Chip8& chip8, uint16_t opcode);

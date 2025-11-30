@@ -3,6 +3,14 @@
 #include <cstdint>
 #include <iostream>
 
+
+/**
+ * @class Chip8Renderer
+ * @brief Handles rendering for the CHIP-8 emulator using SDL3.
+ *
+ * Manages the SDL window, renderer, and texture for displaying the CHIP-8
+ * graphics buffer. Provides methods for initialization and frame rendering.
+ */
 class Chip8Renderer {
 public:
     Chip8Renderer() = default;

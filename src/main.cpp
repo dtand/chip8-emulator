@@ -1,5 +1,6 @@
 #include <iostream>
 #include "emulator.h"
+#include "event_logger.h"
 
 Emulator emulator;
 

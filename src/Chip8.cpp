@@ -105,9 +105,7 @@ void Chip8::loadRom(const char* filename) {
 void Chip8::emulateCycle() {
     // Fetch Opcode
     opcode = memory[pc] << 8 | memory[pc + 1];
-
-    std::cout << "Executing Opcode: " << std::hex << opcode << " at PC: " << pc << std::endl;
-
+    
     // Decode and Execute Opcode
     OpcodeHandler::dispatchOpcode(*this, opcode);
 
