@@ -16,7 +16,7 @@ link_directories(external/SDL3/lib)
 
 # Add your source files here
 include_directories(include)
-add_executable(chip8 src/main.cpp src/Chip8.cpp src/OpcodeHandler.cpp src/Chip8Renderer.cpp)
+add_executable(chip8 src/main.cpp src/Chip8.cpp src/OpcodeHandler.cpp src/Chip8Renderer.cpp src/Emulator.cpp)
 
 # Link SDL3 dynamic library
 # If you use libSDL3.0.dylib, link as SDL3.0

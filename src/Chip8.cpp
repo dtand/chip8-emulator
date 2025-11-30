@@ -4,10 +4,18 @@
 #include <vector>
 #include <opcode.h>
 
+/**
+ * @brief Constructs a Chip8 instance and initializes the emulator state.
+ */
 Chip8::Chip8() {
     initialize();
 }
 
+/**
+ * @brief Initializes the CHIP-8 system state.
+ *
+ * Sets up memory, registers, display, stack, timers, and loads the fontset.
+ */
 void Chip8::initialize() {
     pc = 0x200; // Program counter starts at 0x200
     opcode = 0;
@@ -54,6 +62,14 @@ void Chip8::initialize() {
     }
 }
 
+/**
+ * @brief Loads a CHIP-8 ROM into memory.
+ *
+ * Loads the ROM file contents into memory starting at 0x200.
+ * Prints status messages on success or failure.
+ *
+ * @param filename Path to the ROM file.
+ */
 void Chip8::loadRom(const char* filename) {
     
     std::ifstream rom(filename, std::ios::binary | std::ios::ate);
@@ -81,6 +97,11 @@ void Chip8::loadRom(const char* filename) {
     rom.close();
 }
 
+/**
+ * @brief Executes one emulation cycle.
+ *
+ * Fetches, decodes, and executes the next opcode. Updates timers and handles sound.
+ */
 void Chip8::emulateCycle() {
     // Fetch Opcode
     opcode = memory[pc] << 8 | memory[pc + 1];

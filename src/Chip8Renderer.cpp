@@ -4,6 +4,13 @@ const int VIDEO_SCALE = 10;
 const int VIDEO_WIDTH = 64;
 const int VIDEO_HEIGHT = 32;
 
+/**
+ * @brief Initializes the SDL3 renderer, window, and texture for CHIP-8 display.
+ *
+ * Creates the SDL window, renderer, and texture. Returns 0 on success, 1 on failure.
+ *
+ * @return int 0 if successful, 1 if initialization fails.
+ */
 int Chip8Renderer::initialize(){
     SDL_Init(SDL_INIT_VIDEO);
     window = SDL_CreateWindow("CHIP-8 Emulator",
@@ -39,6 +46,13 @@ int Chip8Renderer::initialize(){
     }
 }
 
+/**
+ * @brief Renders the CHIP-8 video buffer to the SDL window.
+ *
+ * Converts the CHIP-8 video buffer to pixel data and updates the SDL texture and window.
+ *
+ * @param videoBuffer Pointer to the CHIP-8 video buffer (size: 64x32).
+ */
 void Chip8Renderer::render(const uint8_t* videoBuffer){
     uint32_t pixels[VIDEO_WIDTH * VIDEO_HEIGHT];
     for (int i = 0; i < VIDEO_WIDTH * VIDEO_HEIGHT; ++i) {
@@ -50,6 +64,11 @@ void Chip8Renderer::render(const uint8_t* videoBuffer){
     SDL_RenderPresent(renderer);
 }
 
+/**
+ * @brief Destructor for Chip8Renderer.
+ *
+ * Cleans up SDL resources: texture, renderer, window, and quits SDL.
+ */
 Chip8Renderer::~Chip8Renderer(){
     if(texture) SDL_DestroyTexture(texture);
     if(renderer) SDL_DestroyRenderer(renderer);
